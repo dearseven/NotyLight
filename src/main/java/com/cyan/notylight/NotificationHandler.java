@@ -5,6 +5,7 @@ import android.app.KeyguardManager;
 import android.content.Context;
 import android.os.Build.VERSION;
 import android.os.PowerManager;
+import android.os.Vibrator;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.telephony.TelephonyManager;
@@ -16,6 +17,7 @@ import java.util.Map;
 @SuppressLint("OverrideAbstract")
 public class NotificationHandler extends NotificationListenerService {
 	TelephonyManager mTelephonyManager = null;
+	Vibrator vibrator = null;
 
 	@Override
 	public void onNotificationPosted(StatusBarNotification sbn) {
@@ -23,27 +25,37 @@ public class NotificationHandler extends NotificationListenerService {
 			mTelephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
 		}
 
-		//微信 com.tencent.mm
-		//qq  com.tencent.mobileqq
-		//weibo com.sina.weibo
+		// 微信 com.tencent.mm
+		// qq com.tencent.mobileqq
+		// weibo com.sina.weibo
 
-		String pn=sbn.getPackageName();
+		String pn = sbn.getPackageName();
 		Log.d("SevenNLS", pn);
-
-		Map<String,Integer>m=new HashMap<String,Integer>();
-		m.put("com.tencent.mm",1);
-		m.put("com.sina.weibo",1);
-		m.put("com.tencent.mobileqq",1);
-
-
+		// Map<String, Integer> m = new HashMap<String, Integer>();
+		// m.put("com.tencent.mm", 1);
+		// m.put("com.sina.weibo", 1);
+		// m.put("com.tencent.mobileqq", 1);
+		// m.put("com.ss.android.article.news", 1);// 今日头条
+		// m.put("com.taobao.taobao", 1);
+		// m.put("com.myzaker.ZAKER_Phone", 1);
+		// m.put("com.eg.android.AlipayGphone", 1);// 支付宝
+		int flag = Table.action(pn, this);
+		Log.d("SevenNLS", "flag=" + flag);
 		// 点亮屏幕
-		if (!isScreenOn(this)&&mTelephonyManager.getCallState() == TelephonyManager.CALL_STATE_IDLE) {
-			if(m.get(pn.trim())!=null){
-			Log.d("SevenNLS", "cyan 准备点亮屏幕");
-			wakeUpAndUnlock(this);
+		if (!isScreenOn(this)
+				&& mTelephonyManager.getCallState() == TelephonyManager.CALL_STATE_IDLE) {
+			if (flag > 0) {
+				Log.d("SevenNLS", "cyan 准备点亮屏幕");
+				wakeUpAndUnlock(this);
+				if (flag == 2) {
+					Log.d("SevenNLS", "cyan 准备震动");
+					vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+					long[] pattern = { 200, 250, 300, 250 }; // 停止 开启 停止 开启
+					// 重复两次上面的pattern,如果只想震动一次，index设为-1
+					vibrator.vibrate(pattern, -1);
+				}
 			}
 		}
-
 		// super.onNotificationPosted(sbn);
 	}
 
@@ -65,9 +77,9 @@ public class NotificationHandler extends NotificationListenerService {
 				PowerManager.ACQUIRE_CAUSES_WAKEUP
 						| PowerManager.SCREEN_DIM_WAKE_LOCK, "bright");
 		// 点亮屏幕
-		wl.acquire(/* 10000 */);
+		wl.acquire(13500);
 		// 释放
-		wl.release();
+		// wl.release();
 	}
 
 	@SuppressLint("NewApi")
